@@ -4,7 +4,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-
 def scrape_eci_data(url):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -20,14 +19,14 @@ def scrape_eci_data(url):
         raise Exception("Could not find the results table on the page")
 
     data = []
-    for row in table.find_all('tr')[1:]:  # Skip the header row
+    for row in table.find_all('tr')[1:]:
         cols = row.find_all('td')
         if len(cols) == 4:
             party = cols[0].text.strip()
             won = int(cols[1].text.strip())
             leading = int(cols[2].text.strip())
             total = int(cols[3].text.strip())
-            party_link = cols[1].find('a')['href']  # Extract party-wise results page link
+            party_link = cols[1].find('a')['href']
             data.append({
                 'Party': party,
                 'Won': won,
@@ -45,7 +44,7 @@ def scrape_candidate_data(url, party_name):
     }
     try:
         response = requests.get(url, headers=headers)
-        response.raise_for_status()  # Raises an HTTPError for bad responses
+        response.raise_for_status()
     except requests.RequestException as e:
         print(f"Failed to fetch data from {url}: {str(e)}")
         return pd.DataFrame()
@@ -60,7 +59,7 @@ def scrape_candidate_data(url, party_name):
     data = []
     rows = table.find_all('tr')
 
-    for row in rows[1:]:  # Skip the header row
+    for row in rows[1:]:
         cols = row.find_all('td')
         if len(cols) >= 5:
             total_votes = cols[3].text.strip().replace(',', '')
@@ -72,7 +71,7 @@ def scrape_candidate_data(url, party_name):
                 'Winning Candidate': cols[2].text.strip(),
                 'Total Votes': int(total_votes) if total_votes != '-' else 0,
                 'Margin': int(margin) if margin != '-' else 0,
-                'Party': party_name  # Add the party name to each candidate's data
+                'Party': party_name
             })
 
     if not data:
@@ -88,11 +87,10 @@ def independent_candidates_won(df):
     bars = plt.bar(['Independent Candidates'], [total_independents])
     plt.title('Number of Independent Candidates Who Won')
 
-    # Annotate the bar with the total number of independents
     for bar in bars:
         yval = bar.get_height()
         plt.text(bar.get_x() + bar.get_width() / 2, yval, int(yval), va='bottom',
-                 ha='center')  # ha='center' to center the text
+                 ha='center')
 
     plt.savefig('independent_candidates_won.png')
     return f"Number of independent candidates who won: {total_independents}"
@@ -103,14 +101,12 @@ def overall_election_statistics(df):
     total_parties = len(df)
     avg_seats = df['Total'].mean()
 
-    # Data for the bar plot
     stats = ['Total Seats', 'Total Parties', 'Avg Seats per Party']
     values = [total_seats, total_parties, avg_seats]
 
     plt.figure(figsize=(10, 6))
     bars = plt.bar(stats, values, color='skyblue', edgecolor='black')
 
-    # Annotate bars with values
     for bar, value in zip(bars, values):
         plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
                  f'{value:.2f}' if isinstance(value, float) else f'{value}',
@@ -128,27 +124,21 @@ def overall_election_statistics(df):
 
 
 def party_size_distribution(df):
-    # Exclude "Independent - IND" entries
     df_filtered = df[df['Party'] != 'Independent - IND']
 
-    # Define bins and labels
     size_bins = [0, 2, 6, 11, 51, 101, float('inf')]
     labels = ['1', '2-5', '6-10', '11-50', '51-100', '100+']
     df_filtered['Size Category'] = pd.cut(df_filtered['Total'], bins=size_bins, labels=labels, right=False)
 
-    # Calculate distribution
     distribution = df_filtered['Size Category'].value_counts().sort_index()
 
-    # Plot the distribution
     plt.figure(figsize=(10, 6))
     ax = distribution.plot(kind='bar', color='skyblue', edgecolor='black')
 
-    # Annotate bars with counts
     for p in ax.patches:
         ax.annotate(str(p.get_height()), (p.get_x() + p.get_width() / 2., p.get_height()),
                     ha='center', va='center', xytext=(0, 10), textcoords='offset points', fontsize=12)
 
-    # Customize plot
     plt.title('Party Size Distribution', fontsize=16)
     plt.xlabel('Number of Seats', fontsize=14)
     plt.ylabel('Number of Parties', fontsize=14)
@@ -165,24 +155,19 @@ def forming_government(df):
     majority = total_seats // 2 + 1
     top_party = df.loc[df['Total'].idxmax()]
 
-    # Plotting the seat distribution with adjusted spacing and vertical space
     plt.figure(figsize=(18, 12))
     bars = plt.bar(df['Party'], df['Total'], color='skyblue', width=0.6,
-                   edgecolor='black')  # Adjust width and edge color
+                   edgecolor='black')
 
-    # Highlighting the top party likely to form the government
     plt.bar(top_party['Party'], top_party['Total'], color='orange', label='Likely to form government',
             edgecolor='black')
 
-    # Adding the majority line
     plt.axhline(y=majority, color='red', linestyle='--', label='Majority')
 
-    # Adding text labels for seat numbers on top of each bar
     for bar in bars:
         plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 1,
                  f"{int(bar.get_height())}", ha='center', va='bottom')
 
-    # Adjusting y-axis limits and ticks
     plt.ylim(0, max(df['Total']) + 10)  # Increase space above the highest bar
     plt.yticks(range(0, max(df['Total']) + 50, 10))  # Increase y-axis ticks by 10
 
@@ -205,16 +190,13 @@ def election_closeness(df):
     total_seats = df['Total'].sum()
     closeness_percentage = (difference / total_seats) * 100
 
-    # Plotting the bar chart
     plt.figure(figsize=(10, 6))
     bars = plt.bar(top_two['Party'], top_two['Total'])
 
-    # Adding text labels for seat numbers
     for i, bar in enumerate(bars):
         plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 1,
                  f"{int(bar.get_height())}", ha='center', va='bottom')
 
-    # Adding text label for difference and percentage in a box
     text_box_y = (max(top_two.iloc[0]['Total'], top_two.iloc[1]['Total']) + min(top_two.iloc[0]['Total'],
                                                                                 top_two.iloc[1]['Total'])) / 2
     plt.text(0.5, text_box_y,
@@ -240,7 +222,6 @@ def potential_kingmakers(df):
     plt.figure(figsize=(14, 8))
     bars = plt.bar(kingmakers['Party'], kingmakers['Total'], color='skyblue')
 
-    # Adding title and labels
     plt.suptitle(
         'Potential Kingmakers',
         fontsize=16)
@@ -251,7 +232,6 @@ def potential_kingmakers(df):
     plt.xticks(rotation=45, ha='right', fontsize=12)
     plt.yticks(fontsize=12)
 
-    # Adding value labels on bars
     for bar in bars:
         height = bar.get_height()
         plt.text(bar.get_x() + bar.get_width() / 2.0, height, f'{height}', ha='center', va='bottom', fontsize=12)
@@ -260,9 +240,6 @@ def potential_kingmakers(df):
     plt.savefig('potential_kingmakers.png')
 
     return f"Potential kingmakers:\n{kingmakers[['Party', 'Total']].to_string(index=False)}"
-
-
-# candidate data
 
 
 def top_5_candidates_by_votes(candidate_df):
@@ -349,7 +326,6 @@ def main():
     url = "https://results.eci.gov.in/PcResultGenJune2024/index.htm"
     df = scrape_eci_data(url)
 
-    # Scrape candidate data for all parties
     candidate_data = []
     for _, row in df.iterrows():
         try:
@@ -388,7 +364,6 @@ def main():
     else:
         print("No candidate-specific insights could be generated due to lack of data.")
 
-    # Print insights and save to file
     with open('election_insights.txt', 'w') as f:
         for insight in insights:
             print(insight)
