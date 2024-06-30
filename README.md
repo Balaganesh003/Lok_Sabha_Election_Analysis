@@ -61,4 +61,4 @@ The script generates the following insights:
 
 ## Contributing
 
-Contributions, issues, and feature requests are welcome. Feel free to check [issues page](https://github.com/yourusername/indian-election-analysis/issues) if you want to contribute.
+Contributions, issues, and feature requests are welcome. Feel free to check [issues page](https://github.com/Balaganesh003/Lok_Sabha_Election_Analysis_Kalvium_task/issues) if you want to contribute.
